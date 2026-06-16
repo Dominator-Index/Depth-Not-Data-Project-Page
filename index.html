@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Depth, Not Data: An Analysis of Hessian Spectral Bifurcation</title>
+  <meta name="description" content="The Hessian's bulk-and-spike split is usually blamed on imbalanced data. We prove it arises from network depth: even with perfectly whitened data, a depth-L network's Hessian bifurcates, with a dominant/bulk eigenvalue gap that scales exactly as L." />
+
+  <meta property="og:title" content="Depth, Not Data: An Analysis of Hessian Spectral Bifurcation" />
+  <meta property="og:description" content="Hessian spectral bifurcation comes from depth, not data imbalance — the dominant/bulk eigenvalue gap scales linearly with network depth L." />
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="static/images/combined_4panels.png" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="static/css/style.css" />
+
+  <script>
+    window.MathJax = {
+      tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] },
+      svg: { fontCache: 'global' }
+    };
+  </script>
+  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+</head>
+<body>
+
+  <!-- ===== Nav ===== -->
+  <nav class="nav">
+    <div class="nav-inner">
+      <a class="nav-brand" href="#top">Depth, Not Data</a>
+      <div class="nav-links">
+        <a href="#puzzle">Puzzle</a>
+        <a href="#answer">Answer</a>
+        <a href="#setup">Setup</a>
+        <a href="#theory">Theory</a>
+        <a href="#mechanism">Mechanism</a>
+        <a href="#experiments">Experiments</a>
+        <a href="#bibtex">BibTeX</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ===== Hero ===== -->
+  <header id="top" class="hero">
+    <div class="container">
+      <p class="venue-badge">ISIT 2026</p>
+      <h1 class="title">Depth, Not Data:<br />An Analysis of Hessian Spectral Bifurcation</h1>
+
+      <div class="authors">
+        <span class="author"><a href="https://dsyforever.github.io/" target="_blank" rel="noopener">Shenyang Deng</a><sup>1</sup></span>
+        <span class="author"><a href="https://xuan-lgbq.github.io/" target="_blank" rel="noopener">Boyao Liao</a><sup>2</sup></span>
+        <span class="author"><a href="https://dominator-index.github.io/" target="_blank" rel="noopener">Zhuoli Ouyang</a><sup>1</sup></span>
+        <span class="author"><a href="https://tdcsz327.github.io/" target="_blank" rel="noopener">Tianyu Pang</a><sup>1</sup></span>
+        <span class="author"><a href="https://sites.google.com/site/yangyaoqingcmu/" target="_blank" rel="noopener">Yaoqing Yang</a><sup>1&#9993;</sup></span>
+      </div>
+
+      <div class="affiliations">
+        <span><sup>1</sup>Dartmouth College</span>
+        <span><sup>2</sup>University of Birmingham</span>
+      </div>
+      <div class="affiliations note">
+        <span><sup>&#9993;</sup>Corresponding author: yaoqing.yang@dartmouth.edu</span>
+      </div>
+
+      <div class="buttons">
+        <a class="btn" href="static/paper.pdf" target="_blank" rel="noopener"><span class="ico">📄</span> Paper (PDF)</a>
+        <a class="btn btn-dark" href="#bibtex"><span class="ico">❝</span> BibTeX</a>
+      </div>
+
+      <p class="tldr"><strong>TL;DR:</strong> The Hessian's <em>bulk-and-spike</em> spectrum is usually blamed on
+        imbalanced data. We prove it comes from <strong>depth</strong>: even with perfectly whitened data, a
+        depth-$L$ network's Hessian still splits into a dominant cluster and a bulk cluster &mdash; and the
+        gap between them scales <strong>exactly as the depth $L$</strong>.</p>
+    </div>
+  </header>
+
+  <!-- ===== Teaser ===== -->
+  <section class="section teaser">
+    <div class="container narrow">
+      <figure>
+        <img src="static/images/combined_4panels.png" alt="Hessian eigenvalue evolution, training loss, whitened target matrix, and spectral gap scaling with depth" />
+        <figcaption><strong>The whole story at a glance.</strong> Training a deep linear network on
+          <em>perfectly whitened</em> data (c): the Hessian spectrum (a) still separates into a dominant
+          cluster and a near-zero bulk while the loss converges (b); sweeping depth $L=2\!\to\!7$ (d), the
+          dominant/bulk gap $\bar\lambda_{\text{dom}}/\bar\lambda_{\text{bulk}}$ tracks the line
+          $\text{Gap}=L$ &mdash; $\bar\lambda_{\text{dom}}$ grows linearly while $\bar\lambda_{\text{bulk}}$
+          stays flat.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- ===== Abstract ===== -->
+  <section id="abstract" class="section">
+    <div class="container narrow">
+      <h2>Abstract</h2>
+      <p>
+        The eigenvalue distribution of the Hessian plays a crucial role in understanding the optimization
+        landscape of deep neural networks. Prior work attributes the well-documented "bulk-and-spike"
+        spectral structure &mdash; a few dominant eigenvalues separated from a bulk of smaller ones &mdash;
+        to imbalance in the data covariance matrix. We challenge this view by demonstrating that such
+        spectral <strong>bifurcation</strong> can arise purely from the network architecture, independent
+        of data imbalance.
+      </p>
+      <p>
+        Analyzing a deep linear network, we prove that even when the data covariance is perfectly balanced,
+        the Hessian still exhibits a bifurcation: a dominant cluster and a bulk cluster. Crucially, we
+        establish that the ratio between dominant and bulk eigenvalues scales <strong>linearly with the
+        network depth</strong>. This reveals that the spectral gap is strongly affected by the network
+        architecture rather than solely by data distribution, suggesting that both model architecture and
+        data characteristics should be considered when designing optimization algorithms.
+      </p>
+    </div>
+  </section>
+
+  <!-- ===== 1. The puzzle ===== -->
+  <section id="puzzle" class="section alt">
+    <div class="container narrow">
+      <span class="eyebrow">The puzzle</span>
+      <h2>Is the bulk-and-spike Hessian really about the data?</h2>
+      <p>
+        The Hessian $H_L=\nabla^2 L(W)$ of a deep network has a famously ill-conditioned spectrum: a few
+        <em>dominant</em> eigenvalues (spikes) sit far above a <em>bulk</em> of much smaller ones. Formally,
+        there is an index $k$ splitting the spectrum into two well-separated clusters,
+      </p>
+      <p class="display-eq">$$ \underbrace{\lambda_1,\dots,\lambda_k}_{\text{dominant spikes}} \in [ma,\, m(a+\delta)], \qquad \underbrace{\lambda_{k+1},\dots,\lambda_p}_{\text{bulk}} \in [a,\, a+\delta], \qquad m \gg 1. $$</p>
+      <p>
+        A prevailing line of work &mdash; much of it built on Random Matrix Theory &mdash; ties this gap to
+        the <strong>imbalance of the input data covariance</strong>: the Hessian inherits its spikes from a
+        few large directions in the data. This raises the central question:
+      </p>
+      <div class="callout">
+        <span class="q-ico">❓</span>
+        <p><strong>Q1.</strong> Is the spectral bifurcation of $H_L$ (with $k$ spikes and gap $m$)
+          <em>exclusively</em> attributable to the spectral imbalance of the input-data covariance?</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 2. The answer ===== -->
+  <section id="answer" class="section">
+    <div class="container">
+      <span class="eyebrow">The answer</span>
+      <h2>Depth, not data</h2>
+      <p style="text-align:center; max-width:760px; margin:0 auto 14px;">
+        Data imbalance is <em>not</em> a necessary condition. We whiten the data so the covariance and
+        cross-covariance are identity-like, removing every source of imbalance &mdash; and the bifurcation
+        survives, driven entirely by depth.
+      </p>
+      <div class="cards">
+        <div class="card">
+          <div class="card-ico">⚖️</div>
+          <span class="tag">CONTRIBUTION&nbsp;C1</span>
+          <h3>Bifurcation is data-independent</h3>
+          <p>Even with perfectly balanced covariance ($\Sigma_{xx}\simeq I$) and cross-covariance
+            ($\Sigma_{yx}=UV^\top$), the Hessian still splits into a dominant cluster and a bulk cluster.
+            Data imbalance is not required.</p>
+        </div>
+        <div class="card">
+          <div class="card-ico">📏</div>
+          <span class="tag">CONTRIBUTION&nbsp;C2</span>
+          <h3>The gap is set by depth</h3>
+          <p>The dominant-to-bulk eigenvalue ratio scales linearly with depth,
+            $\lambda_{\text{dom}}/\lambda_{\text{bulk}}=\Theta(L)$ &mdash; and exactly $L$ under uniform
+            spectral initialization. Deeper networks are intrinsically more ill-conditioned.</p>
+        </div>
+        <div class="card">
+          <div class="card-ico">🧩</div>
+          <span class="tag">TAKEAWAY</span>
+          <h3>Both matter</h3>
+          <p>Ill-conditioning severity is intrinsic to model design, not only the data. Optimizer design
+            should account for architecture (depth) alongside data characteristics.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 3. Setup ===== -->
+  <section id="setup" class="section alt">
+    <div class="container narrow">
+      <span class="eyebrow">Setup</span>
+      <h2>A clean testbed: deep linear networks</h2>
+      <p>
+        To isolate depth from data, we study a depth-$L$ deep linear network
+        $F(\mathbf{x}) = W^L\cdots W^1\mathbf{x}$ trained with squared loss under gradient descent, following
+        the analytical settings of Arora et al. and Singh et al. The data is <strong>whitened</strong>
+        ($\Sigma_{xx}\simeq I_{d_*}$) and the target is aligned with the initialization
+        ($\Sigma_{yx}=U\mathcal{I}_rV^\top$), so no imbalance can leak in from the data.
+      </p>
+      <p>
+        We analyze the loss Hessian through the <strong>Gauss&ndash;Newton decomposition</strong>
+        $H_L = H_o + H_f$ into the outer-product Hessian $H_o$ and the functional Hessian $H_f$. The
+        nonzero spectrum of $H_o$ coincides with that of a Gram matrix $B_o^{1/2}A_o^\top A_o B_o^{1/2}$
+        whose Kronecker structure we compute in closed form &mdash; the key to the result below.
+      </p>
+    </div>
+  </section>
+
+  <!-- ===== 4. Theory ===== -->
+  <section id="theory" class="section">
+    <div class="container">
+      <span class="eyebrow">Main result</span>
+      <h2>A two-cluster spectrum with a depth-$L$ gap</h2>
+      <div class="container narrow" style="padding:0;">
+        <p>
+          A key lemma shows that <em>all</em> weight matrices share a common spectral structure throughout
+          training, so the dynamics are governed by a single set of effective singular values
+          $\lambda_{i,t}$. Building on this, our main theorem characterizes the full Hessian spectrum.
+        </p>
+        <div class="callout">
+          <span class="q-ico">📐</span>
+          <p><strong>Theorem (Hessian Bifurcation).</strong> For a depth-$L$ deep linear network with
+            whitened, aligned data, the Hessian $H_{L,t}$ has a two-cluster spectrum: $r^2$ dominant
+            eigenvalues of order $L\cdot m_t^{2(L-1)}$, a bulk of order $m_t^{2(L-1)}$, and a vanishing
+            zero space &mdash; with $\lambda_{\text{dom}}/\lambda_{\text{bulk}}=\Theta(L)$.</p>
+        </div>
+        <p>The nonzero spectrum splits into exactly three eigenspaces:</p>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Eigenspace</th><th># eigenvalues</th><th>Magnitude</th></tr>
+            </thead>
+            <tbody>
+              <tr class="row-ours"><td>Dominant</td><td>$r^2$</td><td class="hl">$\Theta\!\left(L\,m_t^{2(L-1)}\right)$</td></tr>
+              <tr><td>Bulk</td><td>$(d_*+d_L-2r)\,r$</td><td>$\Theta\!\left(m_t^{2(L-1)}\right)$</td></tr>
+              <tr><td>Zero</td><td>remaining</td><td>$O\!\left(e^{-L\alpha\eta t}\right)\to 0$</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p style="margin-top:22px;">
+          Under <strong>uniform spectral initialization</strong>, the constants collapse and the ratio
+          becomes exact:
+        </p>
+        <p class="display-eq">$$ \frac{\lambda_{\text{dom}}}{\lambda_{\text{bulk}}} = L. $$</p>
+        <p>
+          Because the dominant eigenvalues are $\approx L$ times the bulk, the ill-conditioning severity is
+          determined by the architecture, not the data &mdash; this is exactly contributions
+          <strong>C1</strong> and <strong>C2</strong> made precise.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 5. Mechanism ===== -->
+  <section id="mechanism" class="section alt">
+    <div class="container narrow">
+      <span class="eyebrow">Why it happens</span>
+      <h2>The mechanism: curvature accumulates across $L$ layers</h2>
+      <div class="facts">
+        <div class="fact">
+          <span class="num">1</span>
+          <p>Directions <strong>inside</strong> the effective parameter space (the $r\times r$ "task"
+            subspace) receive curvature contributions from <em>all $L$ layers</em> at once &mdash; each
+            layer can move the end-to-end map along these directions.</p>
+        </div>
+        <div class="fact">
+          <span class="num">2</span>
+          <p>Directions <strong>outside</strong> that subspace only contribute through a <em>single
+            layer</em>, so their curvature is a factor of $L$ smaller.</p>
+        </div>
+        <div class="fact">
+          <span class="num">3</span>
+          <p>The result is an <strong>$L$-fold gap</strong> between the dominant and bulk eigenvalues &mdash;
+            a structural property of depth that no amount of data balancing removes.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 6. Experiments ===== -->
+  <section id="experiments" class="section">
+    <div class="container">
+      <span class="eyebrow">Simulations</span>
+      <h2>The theory holds &mdash; and extends to nonlinear networks</h2>
+
+      <h3 class="sub">Linear networks: the gap is exactly $L$</h3>
+      <figure class="fig-sm">
+        <img src="static/images/L3_1x2.png" alt="Hessian eigenvalue trajectories and training loss for a depth-3 deep linear network" />
+        <figcaption><strong>Depth-3 deep linear network.</strong> The nonzero spectrum cleanly separates
+          into a dominant cluster and a near-zero bulk (left) while training converges (right). Across
+          $L=2\!\to\!7$ the empirical gap matches the $\text{Gap}=L$ prediction (see teaser, panel&nbsp;d).</figcaption>
+      </figure>
+
+      <h3 class="sub">Beyond linearity: bifurcation persists under tanh</h3>
+      <figure>
+        <img src="static/images/combined_3panels.png" alt="Eigenvalue evolution, training loss, and spectral gap for a tanh deep network" />
+        <figcaption><strong>Nonlinear (tanh) network, $L=3$.</strong> Adding a $\tanh$ activation after each
+          layer, the spectrum still splits cleanly into a dominant and a bulk cluster (a) with stable
+          training (b); the depth-dependent gap (c) again tracks $\text{Gap}=L$ &mdash; the linear analysis
+          is not an artifact of linearity but reflects a general structural property of depth.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- ===== BibTeX ===== -->
+  <section id="bibtex" class="section alt">
+    <div class="container narrow">
+      <h2>BibTeX</h2>
+      <div class="bibtex-box">
+        <button class="copy-btn" data-target="bib-main">Copy</button>
+        <pre id="bib-main"><code>@inproceedings{deng2026depth,
+  title     = {Depth, Not Data: An Analysis of Hessian Spectral Bifurcation},
+  author    = {Deng, Shenyang and Liao, Boyao and Ouyang, Zhuoli and
+               Pang, Tianyu and Yang, Yaoqing},
+  booktitle = {IEEE International Symposium on Information Theory (ISIT)},
+  year      = {2026}
+}</code></pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Footer ===== -->
+  <footer class="footer">
+    <div class="container narrow">
+      <p>Project page for the ISIT 2026 paper "Depth, Not Data: An Analysis of Hessian Spectral Bifurcation".</p>
+      <p><a href="static/paper.pdf" target="_blank" rel="noopener">Paper (PDF)</a></p>
+    </div>
+  </footer>
+
+  <script src="static/js/script.js"></script>
+</body>
+</html>
